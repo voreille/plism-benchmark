@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 from enum import Enum
+from typing import Any
 
 from plismbench.models.bioptimus import H0Mini, HOptimus0, HOptimus1
 from plismbench.models.extractor import Extractor
@@ -214,3 +216,30 @@ class FeatureExtractorsEnum(StringEnum):
             )
         else:
             raise NotImplementedError(f"Extractor {self} is not supported.")
+
+
+def init_extractor(
+    extractor: str,
+    device: int | list[int] | None,
+    extractor_kwargs: dict[str, Any] | None = None,
+) -> Extractor:
+    """Initialize a registered extractor, or an external one given as ``module:factory``.
+
+    External factories are called as ``factory(device=device, **extractor_kwargs)``
+    and must return an :class:`Extractor`. This allows benchmarking models that
+    live outside this repository without registering them in
+    :class:`FeatureExtractorsEnum`.
+    """
+    kwargs = extractor_kwargs or {}
+    if ":" not in extractor:
+        return FeatureExtractorsEnum[extractor.upper()].init(device=device, **kwargs)
+
+    module_name, factory_name = extractor.split(":", 1)
+    factory = getattr(importlib.import_module(module_name), factory_name)
+    feature_extractor = factory(device=device, **kwargs)
+    if not isinstance(feature_extractor, Extractor):
+        raise TypeError(
+            f"{extractor} returned {type(feature_extractor).__name__},"
+            " expected a plismbench.models.extractor.Extractor."
+        )
+    return feature_extractor

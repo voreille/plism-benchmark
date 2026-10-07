@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from plismbench.engine.extract.extract_from_h5 import run_extract_h5
 from plismbench.engine.extract.extract_from_png import run_extract_streaming
@@ -17,6 +18,8 @@ def run_extract(
     streaming: bool = False,
     overwrite: bool = False,
     workers: int = 8,
+    *,
+    extractor_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """Run features extraction.
 
@@ -40,6 +43,7 @@ def run_extract(
             device=device,
             export_dir=export_dir,
             overwrite=overwrite,
+            extractor_kwargs=extractor_kwargs,
         )
     else:
         assert isinstance(download_dir, Path), "Download directory should be specified."
@@ -51,4 +55,5 @@ def run_extract(
             download_dir=download_dir,
             overwrite=overwrite,
             workers=workers,
+            extractor_kwargs=extractor_kwargs,
         )

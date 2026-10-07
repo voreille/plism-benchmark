@@ -140,3 +140,7 @@ dmypy.json
 *.slurm
 *.out
 *.err
+
+# Local data and benchmark outputs
+/data/
+/output/

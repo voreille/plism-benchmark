@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 import h5py
 import numpy as np
@@ -19,7 +20,7 @@ from plismbench.engine.extract.utils import (
     process_imgs,
     save_features,
 )
-from plismbench.models import FeatureExtractorsEnum
+from plismbench.models import init_extractor
 
 
 class H5Dataset(torch.utils.data.Dataset):
@@ -124,6 +125,8 @@ def run_extract_h5(
     download_dir: Path,
     overwrite: bool = False,
     workers: int = 8,
+    *,
+    extractor_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """Run features extraction."""
     if overwrite:
@@ -135,8 +138,8 @@ def run_extract_h5(
     export_dir.mkdir(exist_ok=True, parents=True)
 
     # Initialize the feature extractor
-    feature_extractor = FeatureExtractorsEnum[feature_extractor_name.upper()].init(
-        device=device
+    feature_extractor = init_extractor(
+        feature_extractor_name, device=device, extractor_kwargs=extractor_kwargs
     )
     image_transform = feature_extractor.transform
 

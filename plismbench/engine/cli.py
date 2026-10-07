@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated, Union
 
@@ -24,7 +25,11 @@ def extract(
         str,
         typer.Option(
             "--extractor",
-            help="The name of the feature extractor as defined in ``plismbench.models.__init__.py``",
+            help=(
+                "The name of the feature extractor as defined in"
+                " ``plismbench.models.__init__.py``, or an external factory"
+                " given as ``module:factory`` (requires ``--name``)."
+            ),
         ),
     ],
     export_dir: Annotated[
@@ -34,6 +39,7 @@ def extract(
             help=(
                 "The root folder where features will be stored."
                 " The final export directory is ``export_dir / extractor``"
+                " (``export_dir / name`` if ``--name`` is given)."
             ),
         ),
     ],
@@ -67,6 +73,20 @@ def extract(
             help="Whether to overwrite the previous features extraction run.",
         ),
     ] = False,
+    name: Annotated[
+        Union[str, None],
+        typer.Option(
+            "--name",
+            help="Name of the output features folder. Defaults to ``extractor``.",
+        ),
+    ] = None,
+    extractor_kwargs: Annotated[
+        Union[str, None],
+        typer.Option(
+            "--extractor-kwargs",
+            help="JSON object of keyword arguments passed to the extractor.",
+        ),
+    ] = None,
 ):
     """Perform features extraction on PLISM histology tiles dataset streamed from Hugging-Face.
 
@@ -75,21 +95,28 @@ def extract(
         $ plismbench extract --extractor h0_mini --batch-size 32 --export-dir $HOME/tmp/features/ --download-dir $HOME/tmp/slides/
 
     """
-    supported_feature_extractors = FeatureExtractorsEnum.choices()
-    if extractor not in supported_feature_extractors:
-        raise NotImplementedError(
-            f"Extractor {extractor} not supported."
-            f" Supported extractors are: {supported_feature_extractors}."
-        )
+    if ":" in extractor:
+        if name is None:
+            raise typer.BadParameter(
+                "--name is required with an external ``module:factory`` extractor."
+            )
+    else:
+        supported_feature_extractors = FeatureExtractorsEnum.choices()
+        if extractor not in supported_feature_extractors:
+            raise NotImplementedError(
+                f"Extractor {extractor} not supported."
+                f" Supported extractors are: {supported_feature_extractors}."
+            )
     run_extract(
         feature_extractor_name=extractor,
-        export_dir=export_dir / extractor,
+        export_dir=export_dir / (name or extractor),
         download_dir=download_dir,
         device=device,
         batch_size=batch_size,
         workers=workers,
         overwrite=overwrite,
         streaming=streaming,
+        extractor_kwargs=json.loads(extractor_kwargs) if extractor_kwargs else None,
     )
 
 

@@ -6,6 +6,7 @@ from collections.abc import Callable
 from functools import partial
 from math import ceil
 from pathlib import Path
+from typing import Any
 
 import datasets
 import numpy as np
@@ -21,7 +22,7 @@ from plismbench.engine.extract.utils import (
     process_imgs,
     save_features,
 )
-from plismbench.models import FeatureExtractorsEnum
+from plismbench.models import init_extractor
 from plismbench.models.extractor import Extractor
 
 
@@ -110,6 +111,8 @@ def run_extract_streaming(
     device: int,
     export_dir: Path,
     overwrite: bool,
+    *,
+    extractor_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """Run features extraction with streaming."""
     logger.info(f"Export directory set to {str(export_dir)}.")
@@ -120,8 +123,8 @@ def run_extract_streaming(
     export_dir.mkdir(exist_ok=True, parents=True)
 
     # Initialize the feature extractor
-    feature_extractor = FeatureExtractorsEnum[feature_extractor_name.upper()].init(
-        device=device
+    feature_extractor = init_extractor(
+        feature_extractor_name, device=device, extractor_kwargs=extractor_kwargs
     )
     image_transform = feature_extractor.transform
 
